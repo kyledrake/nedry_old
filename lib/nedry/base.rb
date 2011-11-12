@@ -2,24 +2,35 @@ require 'multi_json'
 require 'xmlsimple'
 MultiJson.engine = :yajl
 module Nedry
+  
   class Base
 
     @@routes = []
 
     class << self
       @routes = []
+      
+      def resource(name, &block)
+        yield
+      end
+      
+      def collection(resource, &block)
+        
+      end
+      
       def get(path, &block); add_route('GET', path, &block) end
       def post(path, &block)
         add_route
       end
 
       def add_route(request_method, path, &block)
-        @@routes << {:request_method => request_method, :path => path, :block => block}
+        @@routes << {:request_method => request_method, :path => path, :base_path => path.match(/\/\w+/).to_s, :block => block}
       end
 
       def match(request_method, path)
+        base_path = path.match(/\/\w+/).to_s
         @@routes.each do |route|
-          if route[:path] == path && route[:request_method] == request_method
+          if route[:base_path] == base_path && route[:request_method] == request_method
             return route
           end
         end

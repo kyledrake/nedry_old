@@ -53,3 +53,17 @@ class API < ProperNoun
     'ok'
   end
 end
+
+=begin
+?format=xml|json
+
+resource_routes => {'widgets' => [
+  ['collection', 'index', block]          # GET /widgets
+  ['collection', 'index', block, action]  # GET /widgets/action
+  ['collection', 'create', block]         # POST /widgets
+  ['member', 'update', block]             # POST /widgets/update/:id || PUT /widgets/:id
+  ['member', 'update', block, action]     # POST /widgets/update/action/:id || PUT /widgets/:id/action
+  ['member', 'show', block]               # GET /widgets/:id
+  ['member', 'delete', block]             # POST /widgets/delete/:id || DELETE /widgets/:id
+]}
+=end
