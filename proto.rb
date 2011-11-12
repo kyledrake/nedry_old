@@ -59,11 +59,11 @@ end
 
 resource_routes => {'widgets' => [
   ['collection', 'index', block]          # GET /widgets
-  ['collection', 'index', block, action]  # GET /widgets/action
+  ['collection', 'action', block]         # GET /widgets/action
   ['collection', 'create', block]         # POST /widgets
-  ['member', 'update', block]             # POST /widgets/update/:id || PUT /widgets/:id
-  ['member', 'update', block, action]     # POST /widgets/update/action/:id || PUT /widgets/:id/action
+  ['member', 'update', block]             # POST /widgets/:id             ||  PUT /widgets/:id
+  ['member', 'flag', block]               # PUT /widgets/:id
   ['member', 'show', block]               # GET /widgets/:id
-  ['member', 'delete', block]             # POST /widgets/delete/:id || DELETE /widgets/:id
+  ['member', 'delete', block]             # POST /widgets/delete/:id
 ]}
 =end

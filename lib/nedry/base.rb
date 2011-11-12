@@ -3,66 +3,62 @@ require 'xmlsimple'
 MultiJson.engine = :yajl
 module Nedry
   
+  class Resource
+    def initialize(name, &block)
+      @name = name.to_sym
+      @routes = []
+      instance_eval &block
+      to_hash
+    end
+
+    def collection(action=:index, &block); add_route('collection', action, block); end
+    def member(action=:show, &block);      add_route('member', action, block);     end
+
+    def to_hash
+      @routes
+    end
+
+    private
+
+    def add_route(type, action, block)
+      @routes << {:type => type, :action => action, :block => block}
+    end
+  end
+
   class Base
 
-    @@routes = []
+    @@routes = {}
 
     class << self
-      @routes = []
-      
       def resource(name, &block)
-        yield
-      end
-      
-      def collection(resource, &block)
-        
-      end
-      
-      def get(path, &block); add_route('GET', path, &block) end
-      def post(path, &block)
-        add_route
-      end
-
-      def add_route(request_method, path, &block)
-        @@routes << {:request_method => request_method, :path => path, :base_path => path.match(/\/\w+/).to_s, :block => block}
-      end
-
-      def match(request_method, path)
-        base_path = path.match(/\/\w+/).to_s
-        @@routes.each do |route|
-          if route[:base_path] == base_path && route[:request_method] == request_method
-            return route
-          end
-        end
-        nil
+        @@routes[name.to_sym] = Resource.new(name, &block).to_hash
       end
 
       def call(env)
-        begin
-          self.new.call env
-        rescue => e
+        self.new.call env
+      end
 
+      def match(request_method, path)
+        path_array = path.split /\//
+        resource = path_array[1].to_sym
+        action = path_array[2]
+        
+        if request_method == 'GET' && action.nil?
+          action = :index
+          type = 'collection'
+        end
+
+        @@routes[resource].each do |route|
+          return route if route[:type] == type && route[:action] == action
         end
       end
-    end
-
-
-    def request_method
-      @env['REQUEST_METHOD']
-    end
-
-    def path
-      @env['PATH_INFO']
-    end
-
-    def params
-      @params ||= Rack::Utils.parse_query @env['QUERY_STRING']
     end
 
     def call(env)
       begin
         call! env
       rescue
+        fail # We don't want to do this yet (or maybe ever)
         @response = error 500, 'server_error', 'An unexpected error has occured, please try your request again later.'
         render
         rack_response
@@ -72,12 +68,6 @@ module Nedry
     def call!(env)
       @env = env
       @headers = {}
-
-      id_match = path.match(/\/:(\w+)/)
-      id = id_match.nil? ? nil : id_match.captures.first
-
-      format_match = path.match(/.(\w+)$/)
-      @format = format_match.nil? ? 'json' : format_match.captures.first
 
       route = self.class.match request_method, path
 
@@ -103,6 +93,19 @@ module Nedry
 
     def error(status, type, message)
       {:error => {:type => type, :message => message}}
+    end
+
+
+    def request_method
+      @env['REQUEST_METHOD']
+    end
+
+    def path
+      @env['PATH_INFO']
+    end
+
+    def params
+      @params ||= Rack::Utils.parse_query @env['QUERY_STRING']
     end
 
     private
