@@ -1,8 +1,10 @@
 require './lib/nedry/base.rb'
 
 class App < Nedry::Base
-  get '/' do
-    test_this
+  resource :widgets do
+    collection :name do
+      [{:raptors => 'whoa'}]
+    end
   end
   
   def self.test_this
