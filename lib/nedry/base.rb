@@ -8,20 +8,19 @@ module Nedry
       @name = name.to_sym
       @routes = []
       instance_eval &block
-      to_hash
     end
 
-    def collection(action=:index, &block); add_route('collection', action, block); end
-    def member(action=:show, &block);      add_route('member', action, block);     end
+    def collection(action=:index, &block); add_route(:collection, action, block); end
+    def member(action=:show, &block);      add_route(:member, action, block);     end
 
-    def to_hash
+    def to_a
       @routes
     end
 
     private
 
     def add_route(type, action, block)
-      @routes << {:type => type, :action => action, :block => block}
+      @routes << {:type => type, :action => action.to_s, :block => block}
     end
   end
 
@@ -31,7 +30,7 @@ module Nedry
 
     class << self
       def resource(name, &block)
-        @@routes[name.to_sym] = Resource.new(name, &block).to_hash
+        @@routes[name.to_sym] = Resource.new(name, &block).to_a
       end
 
       def call(env)
@@ -42,15 +41,20 @@ module Nedry
         path_array = path.split /\//
         resource = path_array[1].to_sym
         action = path_array[2]
-        
-        if request_method == 'GET' && action.nil?
-          action = :index
-          type = 'collection'
+
+        if request_method == 'GET'
+          if action.nil?
+            action = 'index'
+            type = :collection
+          else
+            type = :collection
+          end
         end
 
         @@routes[resource].each do |route|
           return route if route[:type] == type && route[:action] == action
         end
+        nil
       end
     end
 
@@ -71,8 +75,10 @@ module Nedry
 
       route = self.class.match request_method, path
 
+      
+
       if route.nil?
-        @response = error(404, 'not_found', 'The requested method was not found') if route.nil?
+        @response = error 404, 'not_found', 'The requested method was not found'
       else
         @response = route[:block].call @env, params
       end
